@@ -43,6 +43,10 @@
   .dest.on{border-color:var(--mar);background:var(--mar);color:#fff}
   .dest.on .s{color:#fff}
 
+  .editar-lista{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+  .editar-lista button{flex:none;background:#fff;border:1.5px solid var(--mar2);color:var(--mar);border-radius:12px;padding:8px 12px;font-weight:700;font-size:.85rem;text-align:left}
+  .editar-lista button small{display:block;font-weight:600;color:var(--gris);font-size:.72rem}
+
   /* Carta rápida */
   .carta{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
   @media(min-width:640px){.carta{grid-template-columns:repeat(4,1fr)}}
@@ -128,6 +132,10 @@
 <main class="wrap">
   <!-- NUEVO PEDIDO -->
   <section id="v-nuevo">
+    <div id="por-editar" hidden>
+      <h2>✏️ Editar un pedido</h2>
+      <div class="editar-lista" id="editar-lista"></div>
+    </div>
     <h2>1. ¿Para dónde es? <span class="muted" id="editando"></span></h2>
     <div class="destinos" id="destinos"></div>
 
@@ -260,6 +268,7 @@ function editar(id){
   actual = {destId:p.destId, dest:p.dest, tipo:p.tipo, items:p.items.map(i=>({...i})), cliente:p.cliente||"", nota:p.nota||"", editId:p.id};
   $("#t-cliente").value = actual.cliente; $("#t-nota").value = actual.nota;
   $("#editando").textContent = "Editando pedido · toca otra mesa para cambiarlo";
+  $("#por-editar").hidden = true;
   ir("nuevo");
   pintarNuevo();
   $("#paso2").hidden = false;
@@ -359,7 +368,9 @@ function tarjetaPedido(p){
 function pintarPedidos(){
   const abiertos = pedidos.filter(p=>p.estado==="cocina"||p.estado==="servido").sort((a,b)=>a.ts-b.ts);
   const cerrados = pedidos.filter(p=>(p.estado==="pagado"||p.estado==="anulado") && diaDe(p.ts)===hoy()).sort((a,b)=>b.ts-a.ts);
-  $("#l-abiertos").innerHTML = abiertos.map(tarjetaPedido).join("") || `<p class="muted">No hay pedidos pendientes. 🎉</p>`;
+  $("#l-abiertos").innerHTML = abiertos.map(tarjetaPedido).join("") || `<p class="muted">No hay pedidos pendientes. 🎉<br>Cuando guardes un pedido aparecerá aquí con su botón ✏️ Editar.</p>`;
+  $("#por-editar").hidden = !abiertos.length || !!actual?.editId;
+  $("#editar-lista").innerHTML = abiertos.map(p=>`<button data-editar="${p.id}">✏️ ${esc(p.dest)}<small>${hora(p.ts)} · ${soles(totales(p).total)}</small></button>`).join("");
   $("#l-cerrados").innerHTML = cerrados.map(tarjetaPedido).join("") || `<p class="muted">Todavía no hay cobros hoy.</p>`;
   $("#n-abiertos").hidden = !abiertos.length; $("#n-abiertos").textContent = abiertos.length;
 }

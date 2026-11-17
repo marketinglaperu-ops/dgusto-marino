@@ -95,6 +95,7 @@
   .seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .seg button{padding:11px;border-radius:12px;border:1.5px solid var(--borde);background:#fff;font-weight:600;color:var(--tinta)}
   .seg button.on{border-color:var(--mar);background:#e6f0fa;color:var(--mar)}
+  .seg-edit{width:100%;padding:11px;border-radius:12px;border:1.5px dashed var(--mar2);background:#e6f0fa;color:var(--mar);font-weight:700;margin-bottom:4px}
   .seg3{grid-template-columns:repeat(3,1fr)}
   .seg3 button{padding:10px 4px;font-size:.85rem}
   .mesas{grid-template-columns:repeat(5,1fr)}
@@ -169,6 +170,7 @@
     <h3>Tu pedido <button class="cerrar" id="cerrar" aria-label="Cerrar">×</button></h3>
     <div id="lineas"></div>
     <div class="tot"><span>Total</span><span id="h-total">S/ 0.00</span></div>
+    <button class="seg-edit" id="editar-pedido">✏️ Editar pedido · agregar más platos</button>
 
     <label>¿Cómo lo recibes?</label>
     <div class="seg seg3" id="entrega">
@@ -245,7 +247,7 @@ function pintar(){
   $("#b-total").textContent = soles(total);
   $("#h-total").textContent = soles(total) + (items.some(i=>i.p==null) ? " + consultar" : "");
   $("#lineas").innerHTML = items.length
-    ? items.map(i=>`<div class="linea"><span>${i.c} × ${i.n}</span><b>${i.p==null?"consultar":soles(i.p*i.c)}</b></div>`).join("")
+    ? Object.entries(carrito).map(([k,i])=>`<div class="linea" style="align-items:center"><span class="qty"><button data-lmenos="${k}">−</button><b>${i.c}</b><button data-lmas="${k}">+</button></span><span style="flex:1">${i.n}</span><b>${i.p==null?"consultar":soles(i.p*i.c)}</b></div>`).join("")
       + (tuppers ? `<div class="linea"><span>${tuppers} × Tupper para llevar</span><b>${soles(tuppers*TUPPER)}</b></div>` : "")
     : `<p class="nota">Aún no agregas nada.</p>`;
   if(cant===0) cerrar();
@@ -264,6 +266,9 @@ document.addEventListener("click", e=>{
     if(carrito[k] && --carrito[k].c<=0) delete carrito[k];
     pintar(); return;
   }
+  if(t.dataset.lmas){ carrito[t.dataset.lmas].c++; pintar(); return; }
+  if(t.dataset.lmenos){ const k = t.dataset.lmenos; if(--carrito[k].c<=0) delete carrito[k]; pintar(); return; }
+  if(t.id==="editar-pedido"){ cerrar(); document.getElementById("pescados").scrollIntoView({behavior:"smooth"}); aviso("Agrega o quita platos con + y −"); return; }
   if(t.dataset.copiar){
     navigator.clipboard?.writeText(t.dataset.copiar).then(()=>aviso("Número de Yape copiado"),()=>aviso("Yape: 983 431 333"));
   }
