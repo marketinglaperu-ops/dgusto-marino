@@ -144,6 +144,7 @@
         <label for="t-nota">Nota para cocina (opcional)</label>
         <input id="t-nota" placeholder="Ej. sin ensalada, bien dorado">
         <button class="btn pri full" id="t-guardar">Guardar pedido</button>
+        <button class="btn sec full" id="t-cancelar" hidden>Cancelar edición</button>
       </div>
     </div>
   </section>
@@ -224,7 +225,7 @@ PESCADOS.concat(BEBIDAS).forEach(it=>{
 // ---------- Nuevo pedido ----------
 let actual = null;   // {dest, tipo, items:[], editId?}
 
-function abiertoDe(destId){ return pedidos.find(p=>p.destId===destId && (p.estado==="cocina"||p.estado==="servido")); }
+function abiertoDe(destId){ return pedidos.find(p=>p.destId===destId && (p.estado==="cocina"||p.estado==="servido") && p.id!==actual?.editId); }
 
 function pintarDestinos(){
   $("#destinos").innerHTML = DESTINOS.map(d=>{
@@ -239,8 +240,14 @@ function pintarDestinos(){
 function elegirDestino(id){
   const d = DESTINOS.find(x=>x.id===id);
   const ab = d.tipo==="mesa" ? abiertoDe(id) : null;
+  // Editando: tocar otro destino cambia el pedido de mesa / tipo
+  if(actual?.editId){
+    if(ab) return aviso(d.t + " ya tiene otro pedido");
+    Object.assign(actual, {destId:d.id, dest:d.t, tipo:d.tipo});
+    return pintarNuevo();
+  }
   if(ab){ editar(ab.id); return; }
-  actual = {destId:d.id, dest:d.t, tipo:d.tipo, items:[], cliente:"", nota:""};
+  actual ={destId:d.id, dest:d.t, tipo:d.tipo, items:[], cliente:"", nota:""};
   $("#t-cliente").value = ""; $("#t-nota").value = "";
   $("#editando").textContent = "";
   pintarNuevo();
@@ -252,7 +259,7 @@ function editar(id){
   const p = pedidos.find(x=>x.id===id); if(!p) return;
   actual = {destId:p.destId, dest:p.dest, tipo:p.tipo, items:p.items.map(i=>({...i})), cliente:p.cliente||"", nota:p.nota||"", editId:p.id};
   $("#t-cliente").value = actual.cliente; $("#t-nota").value = actual.nota;
-  $("#editando").textContent = "Agregando al pedido de " + p.dest;
+  $("#editando").textContent = "Editando pedido · toca otra mesa para cambiarlo";
   ir("nuevo");
   pintarNuevo();
   $("#paso2").hidden = false;
@@ -269,7 +276,9 @@ function pintarNuevo(){
       <div class="n">${esc(c.n)}</div><div class="p ${pr==null?'c':''}">${pr==null ? "Poner precio" : soles(pr)}</div></button>`;
   }).join("");
   const t = totales(actual);
-  $("#t-dest").textContent = actual.dest;
+  $("#t-dest").textContent = (actual.editId ? "✏️ " : "") + actual.dest;
+  $("#t-guardar").textContent = actual.editId ? "Guardar cambios" : "Guardar pedido";
+  $("#t-cancelar").hidden = !actual.editId;
   $("#t-filas").innerHTML = actual.items.length
     ? actual.items.map(i=>`<div class="fila"><button class="mini" data-menos="${i.k}">−</button><b>${i.c}</b><button class="mini" data-mas="${i.k}">+</button>
         <span class="x">${esc(i.n)}</span><span class="m">${soles(i.p*i.c)}</span></div>`).join("")
@@ -310,7 +319,7 @@ $("#t-guardar").onclick = ()=>{
   actual.nota = $("#t-nota").value.trim();
   if(actual.editId){
     const p = pedidos.find(x=>x.id===actual.editId);
-    Object.assign(p, {items:actual.items, cliente:actual.cliente, nota:actual.nota});
+    Object.assign(p, {items:actual.items, cliente:actual.cliente, nota:actual.nota, destId:actual.destId, dest:actual.dest, tipo:actual.tipo, editado:Date.now()});
     aviso("Pedido actualizado · " + p.dest);
   } else {
     pedidos.push({id:Date.now().toString(36), ts:Date.now(), destId:actual.destId, dest:actual.dest, tipo:actual.tipo,
@@ -322,7 +331,8 @@ $("#t-guardar").onclick = ()=>{
   pintarTodo();
   ir("pedidos");
 };
-$("#t-limpiar").onclick = ()=>{ if(actual){ actual.items = []; pintarNuevo(); } };
+$("#t-cancelar").onclick = ()=>{ actual = null; $("#paso2").hidden = true; $("#editando").textContent = ""; pintarTodo(); ir("pedidos"); };
+$("#t-limpiar").onclick =()=>{ if(actual){ actual.items = []; pintarNuevo(); } };
 
 // ---------- Pedidos ----------
 const ETQ = {cocina:"En cocina", servido:"Entregado · por cobrar", pagado:"Cobrado", anulado:"Anulado"};
@@ -330,8 +340,10 @@ const ETQ = {cocina:"En cocina", servido:"Entregado · por cobrar", pagado:"Cobr
 function tarjetaPedido(p){
   const t = totales(p);
   let acc = "";
-  if(p.estado==="cocina") acc = `<button class="btn sec" data-editar="${p.id}">+ Agregar</button><button class="btn pri" data-servir="${p.id}">Entregado</button><button class="btn ok" data-cobrar="${p.id}">Cobrar</button>`;
-  else if(p.estado==="servido") acc = `<button class="btn sec" data-editar="${p.id}">+ Agregar</button><button class="btn ok" data-cobrar="${p.id}">Cobrar ${soles(t.total)}</button>`;
+  const ed = `<button class="btn sec" data-editar="${p.id}">✏️ Editar</button>`;
+  if(p.estado==="cocina") acc = `${ed}<button class="btn pri" data-servir="${p.id}">Entregado</button><button class="btn ok" data-cobrar="${p.id}">Cobrar</button>`;
+  else if(p.estado==="servido") acc = `${ed}<button class="btn ok" data-cobrar="${p.id}">Cobrar ${soles(t.total)}</button>`;
+  else if(p.estado==="pagado") acc = `${ed}<button class="btn sec" data-cambiarpago="${p.id}">Cambiar a ${p.pago==="Yape"?"Efectivo":"Yape"}</button>`;
   const anular = (p.estado==="cocina"||p.estado==="servido") ? `<button class="btn peligro" data-anular="${p.id}" style="flex:0 0 auto;min-width:0">✕</button>` : "";
   return `<div class="ped ${p.estado}">
     <div class="cab"><span class="d">${esc(p.dest)}</span><span class="h">${hora(p.ts)}${p.pago?` · ${p.pago}`:""}</span></div>
@@ -449,6 +461,7 @@ document.addEventListener("click", e=>{
   if(d.editar) return editar(d.editar);
   if(d.servir){ pedidos.find(p=>p.id===d.servir).estado = "servido"; persistir(); return pintarTodo(); }
   if(d.cobrar) return cobrar(d.cobrar);
+  if(d.cambiarpago){ const p = pedidos.find(x=>x.id===d.cambiarpago); p.pago = p.pago==="Yape" ? "Efectivo" : "Yape"; persistir(); pintarTodo(); return aviso("Pago cambiado a " + p.pago); }
   if(d.anular) return confirmar("¿Anular este pedido?", ()=>{ pedidos.find(p=>p.id===d.anular).estado = "anulado"; persistir(); pintarTodo(); });
 });
 
