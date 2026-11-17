@@ -1,0 +1,11 @@
+{
+  "name": "Panel D'Gusto Marino",
+  "short_name": "Panel DGM",
+  "id": "./panel.html",
+  "start_url": "./panel.html",
+  "display": "standalone",
+  "background_color": "#f6f1e7",
+  "theme_color": "#0b3d6b",
+  "lang": "es",
+  "icons": [{"src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable"}]
+}
