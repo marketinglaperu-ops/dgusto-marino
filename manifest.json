@@ -1,0 +1,10 @@
+{
+  "name": "D'Gusto Marino – Pescados Fritos",
+  "short_name": "D'Gusto Marino",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#fdf6e9",
+  "theme_color": "#0b3d6b",
+  "lang": "es",
+  "icons": [{"src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable"}]
+}

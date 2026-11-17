@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>D'Gusto Marino – Pescados Fritos</title>
+<meta name="description" content="Pide tus pescados fritos de D'Gusto Marino por WhatsApp y paga con Yape.">
+<meta name="theme-color" content="#0b3d6b">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lobster&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --mar:#0b3d6b; --mar2:#125a96; --sol:#f59e0b; --coral:#e8542f;
+    --arena:#fdf6e9; --tinta:#1b2733; --gris:#6b7785; --borde:#e7dcc6;
+    --yape:#742284; --wa:#25d366; --card:#ffffff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:Poppins,system-ui,sans-serif;background:var(--arena);color:var(--tinta);padding-bottom:96px}
+  button{font:inherit;cursor:pointer;border:0}
+  .wrap{max-width:720px;margin:0 auto;padding:0 16px}
+
+  /* Hero */
+  header{background:linear-gradient(160deg,var(--mar) 0%,var(--mar2) 70%,#1a7bbf 100%);color:#fff;position:relative;overflow:hidden}
+  header::after{content:"";position:absolute;left:-10%;right:-10%;bottom:-38px;height:80px;background:var(--arena);border-radius:50% 50% 0 0}
+  .hero{padding:36px 0 70px;text-align:center;position:relative;z-index:1}
+  .tag{display:inline-block;background:var(--coral);font-size:.75rem;font-weight:600;padding:4px 12px;border-radius:999px;letter-spacing:.04em}
+  .marca{font-family:Lobster,cursive;font-size:clamp(2.6rem,11vw,3.6rem);line-height:1.05;margin:12px 0 4px;text-shadow:0 3px 0 rgba(0,0,0,.25)}
+  .marca span{color:var(--sol)}
+  .sub{font-weight:600;letter-spacing:.18em;text-transform:uppercase;font-size:.8rem;opacity:.9}
+  .slogan{margin-top:10px;opacity:.85;font-size:.95rem}
+  .chips{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+  .chips a{color:#fff;text-decoration:none;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);padding:8px 14px;border-radius:999px;font-size:.85rem;font-weight:600}
+
+  /* Tabs */
+  .tabs{position:sticky;top:0;z-index:5;background:var(--arena);padding:10px 0;border-bottom:1px solid var(--borde)}
+  .tabs .wrap{display:flex;gap:8px;overflow-x:auto}
+  .tabs a{flex:none;text-decoration:none;color:var(--mar);border:2px solid var(--mar);padding:6px 16px;border-radius:999px;font-weight:600;font-size:.9rem}
+  .tabs a.on{background:var(--mar);color:#fff}
+
+  h2{font-family:Lobster,cursive;font-weight:400;color:var(--mar);font-size:1.9rem;margin:28px 0 4px}
+  .nota{color:var(--gris);font-size:.85rem;margin-bottom:14px}
+
+  /* Items */
+  .grid{display:grid;gap:10px}
+  @media(min-width:600px){.grid{grid-template-columns:1fr 1fr}}
+  .item{background:var(--card);border:1px solid var(--borde);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px}
+  .ico{width:44px;height:44px;flex:none;border-radius:12px;background:#e6f0fa;display:grid;place-items:center;font-size:1.4rem}
+  .info{flex:1;min-width:0}
+  .nom{font-weight:600;line-height:1.2}
+  .det{font-size:.78rem;color:var(--gris)}
+  .precio{font-weight:700;color:var(--coral);font-size:.95rem;margin-top:2px}
+  .precio.cons{color:var(--gris);font-weight:600;font-size:.82rem}
+  .add{background:var(--sol);color:var(--tinta);width:38px;height:38px;border-radius:12px;font-size:1.4rem;font-weight:700;flex:none}
+  .qty{display:flex;align-items:center;gap:6px;flex:none}
+  .qty button{width:32px;height:32px;border-radius:10px;background:var(--mar);color:#fff;font-weight:700;font-size:1.1rem}
+  .qty b{min-width:18px;text-align:center}
+  .sel{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+  .sel button{font-size:.75rem;padding:3px 10px;border-radius:999px;border:1.5px solid var(--borde);background:#fff;color:var(--tinta)}
+  .sel button.on{border-color:var(--mar);background:var(--mar);color:#fff}
+
+  /* Pago */
+  .pago{background:var(--yape);color:#fff;border-radius:18px;padding:20px;margin-top:28px;display:flex;gap:16px;align-items:center}
+  .pago .y{width:58px;height:58px;border-radius:16px;background:#fff;color:var(--yape);font-weight:800;display:grid;place-items:center;font-size:1.1rem;flex:none}
+  .pago small{opacity:.85}
+  .pago .num{font-size:1.35rem;font-weight:700;letter-spacing:.03em}
+  .copiar{background:#fff;color:var(--yape);padding:6px 12px;border-radius:999px;font-size:.8rem;font-weight:700;margin-top:6px}
+
+  footer{text-align:center;color:var(--gris);font-size:.8rem;padding:32px 0 12px}
+
+  /* Barra carrito */
+  .barra{position:fixed;left:0;right:0;bottom:0;z-index:10;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--arena) 30%)}
+  .barra button{width:100%;max-width:688px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;background:var(--mar);color:#fff;padding:14px 18px;border-radius:16px;font-weight:600;box-shadow:0 8px 24px rgba(11,61,107,.35)}
+  .barra[hidden]{display:none}
+  .pill{background:var(--sol);color:var(--tinta);border-radius:999px;padding:2px 10px;margin-right:8px;font-weight:700}
+
+  /* Hoja de pedido */
+  .velo{position:fixed;inset:0;background:rgba(10,20,30,.5);z-index:20;opacity:0;pointer-events:none;transition:.2s}
+  .velo.on{opacity:1;pointer-events:auto}
+  .hoja{position:fixed;left:0;right:0;bottom:0;z-index:21;background:#fff;border-radius:22px 22px 0 0;max-height:92vh;overflow:auto;transform:translateY(100%);transition:.25s;max-width:720px;margin:0 auto}
+  .hoja.on{transform:none}
+  .hoja .wrap{padding:18px 18px calc(22px + env(safe-area-inset-bottom))}
+  .asa{width:44px;height:5px;background:var(--borde);border-radius:9px;margin:0 auto 12px}
+  .hoja h3{color:var(--mar);font-size:1.2rem;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+  .cerrar{background:none;font-size:1.6rem;color:var(--gris)}
+  .linea{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px dashed var(--borde);font-size:.92rem}
+  .tot{display:flex;justify-content:space-between;font-weight:700;font-size:1.1rem;padding:12px 0}
+  label{display:block;font-size:.8rem;font-weight:600;color:var(--gris);margin:12px 0 4px}
+  input,textarea{width:100%;font:inherit;padding:11px 12px;border:1.5px solid var(--borde);border-radius:12px;background:#fff;color:var(--tinta)}
+  input:focus,textarea:focus{outline:none;border-color:var(--mar2)}
+  .seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .seg button{padding:11px;border-radius:12px;border:1.5px solid var(--borde);background:#fff;font-weight:600;color:var(--tinta)}
+  .seg button.on{border-color:var(--mar);background:#e6f0fa;color:var(--mar)}
+  .enviar{width:100%;margin-top:18px;background:var(--wa);color:#fff;padding:15px;border-radius:14px;font-weight:700;font-size:1rem}
+  .aviso{font-size:.78rem;color:var(--gris);margin-top:10px;text-align:center}
+  .toast{position:fixed;left:50%;top:18px;transform:translateX(-50%) translateY(-120px);background:var(--tinta);color:#fff;padding:10px 18px;border-radius:999px;font-size:.88rem;z-index:30;transition:.25s}
+  .toast.on{transform:translateX(-50%)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap hero">
+    <span class="tag">Sabor del mar en cada plato</span>
+    <h1 class="marca">D'Gusto <span>Marino</span></h1>
+    <div class="sub">Pescados Fritos</div>
+    <p class="slogan">Arma tu pedido aquí y te lo confirmamos por WhatsApp.</p>
+    <div class="chips">
+      <a href="#pescados">🐟 Ver carta</a>
+      <a href="#pago">💜 Pagar con Yape</a>
+      <a href="https://wa.me/51983431333" target="_blank" rel="noopener">💬 WhatsApp</a>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs"><div class="wrap">
+  <a href="#pescados" class="on">Pescados</a>
+  <a href="#bebidas">Bebidas</a>
+  <a href="#pago">Pago</a>
+</div></nav>
+
+<main class="wrap">
+  <section id="pescados">
+    <h2>Nuestra variedad de pescados</h2>
+    <p class="nota">Pescado frito al momento. Precios en soles.</p>
+    <div class="grid" id="lista-pescados"></div>
+  </section>
+
+  <section id="bebidas">
+    <h2>Bebidas</h2>
+    <p class="nota">Refrescos de la casa, bien heladitos.</p>
+    <div class="grid" id="lista-bebidas"></div>
+  </section>
+
+  <section id="pago">
+    <div class="pago">
+      <div class="y">yape</div>
+      <div>
+        <small>Yapea al número</small>
+        <div class="num">983 431 333</div>
+        <small>Envía la captura junto a tu pedido</small><br>
+        <button class="copiar" data-copiar="983431333">Copiar número</button>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Pedidos y Yape: <b>983 431 333</b><br>
+    D'Gusto Marino · Pescados Fritos
+  </footer>
+</main>
+
+<div class="barra" id="barra" hidden>
+  <button id="ver-pedido"><span><span class="pill" id="b-cant">0</span>Ver mi pedido</span><span id="b-total">S/ 0.00</span></button>
+</div>
+
+<div class="velo" id="velo"></div>
+<aside class="hoja" id="hoja" aria-label="Tu pedido">
+  <div class="wrap">
+    <div class="asa"></div>
+    <h3>Tu pedido <button class="cerrar" id="cerrar" aria-label="Cerrar">×</button></h3>
+    <div id="lineas"></div>
+    <div class="tot"><span>Total</span><span id="h-total">S/ 0.00</span></div>
+
+    <label>¿Cómo lo recibes?</label>
+    <div class="seg" id="entrega">
+      <button data-v="Delivery" class="on">🛵 Delivery</button>
+      <button data-v="Recojo en local">🏪 Recojo</button>
+    </div>
+
+    <label for="nombre">Tu nombre</label>
+    <input id="nombre" autocomplete="name" placeholder="Ej. María">
+
+    <div id="caja-dir">
+      <label for="dir">Dirección de entrega</label>
+      <input id="dir" autocomplete="street-address" placeholder="Calle, número, referencia">
+    </div>
+
+    <label>Forma de pago</label>
+    <div class="seg" id="pago-sel">
+      <button data-v="Yape" class="on">💜 Yape</button>
+      <button data-v="Efectivo">💵 Efectivo</button>
+    </div>
+
+    <label for="notas">Notas (opcional)</label>
+    <textarea id="notas" rows="2" placeholder="Ej. sin ensalada, bien doradito"></textarea>
+
+    <button class="enviar" id="enviar">Enviar pedido por WhatsApp</button>
+    <p class="aviso">Se abrirá WhatsApp con tu pedido listo para enviar al 983 431 333.</p>
+  </div>
+</aside>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const WHATSAPP = "51983431333";
+
+// precio null = "consultar" (no se lee en la carta)
+const PESCADOS = [
+  {id:"cabrilla", n:"Cabrilla", p:20},
+  {id:"colanegra", n:"Cola negra", p:20},
+  {id:"trucha", n:"Trucha", p:16},
+  {id:"truchasal", n:"Trucha salmonada", p:17},
+  {id:"sierra", n:"Sierra", p:17},
+  {id:"tilapia", n:"Tilapia", p:15},
+  {id:"merluza", n:"Merluza", p:16},
+  {id:"lomonegro", n:"Lomo negro", p:null},
+  {id:"pampano", n:"Pámpano norteño", p:20},
+  {id:"doncella", n:"Doncella", p:18},
+  {id:"senorita", n:"Señorita", p:17},
+  {id:"picado", n:"Picado", p:null},
+  {id:"bonito", n:"Bonito", d:"2 filetes", p:15},
+  {id:"chiclula", n:"Chicharrón de lula", p:16},
+  {id:"chicpota", n:"Chicharrón de pota", p:13},
+  {id:"huevera", n:"Huevera", p:18},
+  {id:"cherlo", n:"Cherlo", p:20},
+  {id:"chita", n:"Chita", ops:[{t:"S/ 18",p:18},{t:"S/ 20",p:20}]},
+  {id:"cachema", n:"Cachema", p:null},
+  {id:"mero", n:"Mero", p:null},
+  {id:"cojinova", n:"Cojinova", p:null},
+];
+const BEBIDAS = [
+  {id:"chicha", n:"Chicha morada", ico:"🍇", ops:[{t:"Vaso S/ 2",p:2},{t:"1 litro S/ 6",p:6}]},
+  {id:"cebada", n:"Cebada", ico:"🌾", ops:[{t:"Vaso S/ 2",p:2},{t:"1 litro S/ 6",p:6}]},
+];
+
+const carrito = {};      // clave -> {n, p, c}
+const opcion = {};       // id -> índice de opción elegido
+const $ = s => document.querySelector(s);
+const soles = v => "S/ " + v.toFixed(2);
+
+function claveDe(it){
+  if(!it.ops) return it.id;
+  return it.id + ":" + (opcion[it.id] || 0);
+}
+
+function tarjeta(it, ico){
+  const k = claveDe(it), c = carrito[k]?.c || 0;
+  let precio;
+  if(it.ops) precio = `<div class="sel">${it.ops.map((o,i)=>`<button data-op="${it.id}" data-i="${i}" class="${(opcion[it.id]||0)===i?'on':''}">${o.t}</button>`).join("")}</div>`;
+  else if(it.p==null) precio = `<div class="precio cons">Precio a consultar</div>`;
+  else precio = `<div class="precio">${soles(it.p)}</div>`;
+  const ctrl = c
+    ? `<div class="qty"><button data-menos="${it.id}">−</button><b>${c}</b><button data-mas="${it.id}">+</button></div>`
+    : `<button class="add" data-mas="${it.id}" aria-label="Agregar ${it.n}">+</button>`;
+  return `<div class="item"><div class="ico">${it.ico || ico}</div><div class="info"><div class="nom">${it.n}</div>${it.d?`<div class="det">${it.d}</div>`:""}${precio}</div>${ctrl}</div>`;
+}
+
+const TODOS = [...PESCADOS, ...BEBIDAS];
+const buscar = id => TODOS.find(x=>x.id===id);
+
+function pintar(){
+  $("#lista-pescados").innerHTML = PESCADOS.map(i=>tarjeta(i,"🐟")).join("");
+  $("#lista-bebidas").innerHTML = BEBIDAS.map(i=>tarjeta(i,"🥤")).join("");
+  const items = Object.values(carrito);
+  const cant = items.reduce((a,b)=>a+b.c,0);
+  const total = items.reduce((a,b)=>a+(b.p||0)*b.c,0);
+  $("#barra").hidden = cant===0;
+  $("#b-cant").textContent = cant;
+  $("#b-total").textContent = soles(total);
+  $("#h-total").textContent = soles(total) + (items.some(i=>i.p==null) ? " + consultar" : "");
+  $("#lineas").innerHTML = items.length
+    ? items.map(i=>`<div class="linea"><span>${i.c} × ${i.n}</span><b>${i.p==null?"consultar":soles(i.p*i.c)}</b></div>`).join("")
+    : `<p class="nota">Aún no agregas nada.</p>`;
+  if(cant===0) cerrar();
+}
+
+document.addEventListener("click", e=>{
+  const t = e.target.closest("button"); if(!t) return;
+  if(t.dataset.op){ opcion[t.dataset.op] = +t.dataset.i; pintar(); return; }
+  if(t.dataset.mas){
+    const it = buscar(t.dataset.mas), k = claveDe(it), d = datosDe(it);
+    carrito[k] = carrito[k] || {n:d.n, p:d.p, c:0};
+    carrito[k].c++; pintar(); return;
+  }
+  if(t.dataset.menos){
+    const k = claveDe(buscar(t.dataset.menos));
+    if(carrito[k] && --carrito[k].c<=0) delete carrito[k];
+    pintar(); return;
+  }
+  if(t.dataset.copiar){
+    navigator.clipboard?.writeText(t.dataset.copiar).then(()=>aviso("Número de Yape copiado"),()=>aviso("Yape: 983 431 333"));
+  }
+});
+
+// Nombre de la línea del pedido (Chita S/18 vs S/20, vaso vs litro)
+function datosDe(it){
+  if(!it.ops) return {n: it.n + (it.d ? ` (${it.d})` : ""), p: it.p};
+  const o = it.ops[opcion[it.id] || 0];
+  const tam = o.t.replace(/S\/\s*\d+/,"").trim();
+  return {n: tam ? `${it.n} (${tam.toLowerCase()})` : `${it.n} de ${soles(o.p)}`, p:o.p};
+};
+
+function segmento(id){
+  $(id).addEventListener("click", e=>{
+    const b = e.target.closest("button"); if(!b) return;
+    $(id).querySelectorAll("button").forEach(x=>x.classList.toggle("on", x===b));
+    if(id==="#entrega") $("#caja-dir").hidden = b.dataset.v!=="Delivery";
+  });
+}
+segmento("#entrega"); segmento("#pago-sel");
+const valorSeg = id => $(id+" .on").dataset.v;
+
+function abrir(){ $("#hoja").classList.add("on"); $("#velo").classList.add("on"); }
+function cerrar(){ $("#hoja").classList.remove("on"); $("#velo").classList.remove("on"); }
+$("#ver-pedido").onclick = abrir; $("#cerrar").onclick = cerrar; $("#velo").onclick = cerrar;
+
+function aviso(txt){ const t=$("#toast"); t.textContent=txt; t.classList.add("on"); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove("on"),2200); }
+
+$("#enviar").onclick = ()=>{
+  const nombre = $("#nombre").value.trim();
+  const entrega = valorSeg("#entrega"), pago = valorSeg("#pago-sel");
+  const dir = $("#dir").value.trim(), notas = $("#notas").value.trim();
+  if(!nombre) return aviso("Escribe tu nombre"), $("#nombre").focus();
+  if(entrega==="Delivery" && !dir) return aviso("Escribe tu dirección"), $("#dir").focus();
+  const items = Object.values(carrito);
+  const total = items.reduce((a,b)=>a+(b.p||0)*b.c,0);
+  let m = `🐟 *Nuevo pedido – D'Gusto Marino*\n\n`;
+  items.forEach(i=> m += `• ${i.c} × ${i.n} — ${i.p==null?"consultar precio":soles(i.p*i.c)}\n`);
+  m += `\n*Total: ${soles(total)}*${items.some(i=>i.p==null)?" (+ platos por consultar)":""}\n\n`;
+  m += `👤 ${nombre}\n📦 ${entrega}${entrega==="Delivery"?`\n📍 ${dir}`:""}\n💳 ${pago}${pago==="Yape"?" (al 983 431 333 – envío captura)":""}`;
+  if(notas) m += `\n📝 ${notas}`;
+  window.open(`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(m)}`, "_blank");
+};
+
+// Pestaña activa según scroll
+const secciones = ["pescados","bebidas","pago"].map(id=>document.getElementById(id));
+addEventListener("scroll", ()=>{
+  let act = secciones[0].id;
+  secciones.forEach(s=>{ if(s.getBoundingClientRect().top < 140) act = s.id; });
+  document.querySelectorAll(".tabs a").forEach(a=>a.classList.toggle("on", a.getAttribute("href")==="#"+act));
+}, {passive:true});
+
+pintar();
+if("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("sw.js");
+</script>
+</body>
+</html>
