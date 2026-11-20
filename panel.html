@@ -105,6 +105,21 @@
   .kpi.big .l{color:#fff;opacity:.8}
   .top .fila .bar{height:8px;background:var(--sol);border-radius:9px}
 
+  /* Stock */
+  .stock-fila{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px dashed var(--borde)}
+  .stock-fila .x{flex:1;font-weight:600;font-size:.9rem}
+  .stock-fila .x small{display:block;font-weight:600;font-size:.75rem;color:var(--gris)}
+  .stock-fila input{width:84px;text-align:center;padding:8px}
+  .disp{font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:999px;background:#dcfce7;color:var(--verde)}
+  .disp.bajo{background:#fef3c7;color:#a16207}
+  .disp.cero{background:#fde6de;color:var(--coral)}
+  .plato.agotado{opacity:.45;background:#f1f1f1}
+  .plato .q{font-size:.7rem;font-weight:700;color:#a16207}
+  .plato.agotado .q{color:var(--coral)}
+  .sync{font-size:.75rem;padding:8px 10px;border-radius:10px;margin-top:10px}
+  .sync.off{background:#fef3c7;color:#a16207}
+  .sync.on{background:#dcfce7;color:var(--verde)}
+
   /* Navegación */
   nav{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--borde);display:flex;padding-bottom:env(safe-area-inset-bottom);z-index:9}
   nav button{flex:1;padding:10px 0 8px;font-size:.75rem;font-weight:600;color:var(--gris);display:flex;flex-direction:column;align-items:center;gap:2px}
@@ -165,6 +180,18 @@
     <div class="lista" id="l-cerrados"></div>
   </section>
 
+  <!-- STOCK -->
+  <section id="v-stock" hidden>
+    <h2>Stock de hoy</h2>
+    <p class="muted">Escribe cuántos tienes de cada pescado. Cada pedido que guardes lo resta solo. Cuando llega a 0 sale <b>Agotado</b> y ya no se puede vender. Déjalo vacío si no quieres controlar ese plato.</p>
+    <div class="ticket" id="stock-lista"></div>
+    <div class="dos">
+      <button class="btn pri" id="s-guardar">Guardar stock</button>
+      <button class="btn sec" id="s-limpiar">Quitar todo el control</button>
+    </div>
+    <div class="sync off" id="s-sync"></div>
+  </section>
+
   <!-- CAJA -->
   <section id="v-caja" hidden>
     <h2>Caja del día <input type="date" id="c-fecha" style="width:auto;padding:6px 10px;font-size:.85rem"></h2>
@@ -183,6 +210,7 @@
 <nav>
   <button data-v="nuevo" class="on"><span>➕</span>Nuevo</button>
   <button data-v="pedidos"><span>🧾</span><div>Pedidos<b class="cnt" id="n-abiertos" hidden>0</b></div></button>
+  <button data-v="stock"><span>📦</span>Stock</button>
   <button data-v="caja"><span>💰</span>Caja</button>
 </nav>
 
@@ -201,7 +229,84 @@ function leer(k, def){ try { return JSON.parse(localStorage.getItem(k)) ?? def; 
 function guardar(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch { aviso("No se pudo guardar en este celular"); } }
 let pedidos = leer(KEY, []);
 let precios = leer(KEY_PRECIOS, {});   // últimos precios usados para platos "a consultar"
-const persistir = () => guardar(KEY, pedidos);
+const persistir = () => { guardar(KEY, pedidos); subirStock(); };
+
+// ---------- Stock ----------
+// stockIni[id] = {ini, ts}: lo que el dueño tenía al momento ts. Disponible = ini − lo vendido después de ts.
+let stockIni = leer("dgm_stock", {});
+const base = k => k.split(":")[0];
+function vendido(id, ts, excluirId){
+  return pedidos.filter(p=>p.estado!=="anulado" && p.ts>=ts && p.id!==excluirId)
+    .reduce((a,p)=>a+p.items.filter(i=>base(i.k)===id).reduce((x,i)=>x+i.c,0),0);
+}
+function disponible(id, excluirId){
+  const s = stockIni[id]; if(!s) return null;
+  return Math.max(0, s.ini - vendido(id, s.ts, excluirId));
+}
+// Lo que queda para agregar al pedido que se está armando
+function quedaParaAgregar(id){
+  const d = disponible(id, actual?.editId); if(d==null) return Infinity;
+  const enPedido = actual ? actual.items.filter(i=>base(i.k)===id).reduce((a,i)=>a+i.c,0) : 0;
+  return d - enPedido;
+}
+const CONTROLABLES = PESCADOS.concat(BEBIDAS);
+function pintarStock(){
+  $("#stock-lista").innerHTML = CONTROLABLES.map(it=>{
+    const d = disponible(it.id), s = stockIni[it.id];
+    const tag = d==null ? "" : `<span class="disp ${d<=0?'cero':d<=3?'bajo':''}">${d<=0?'Agotado':'Quedan '+d}</span>`;
+    return `<div class="stock-fila"><span class="x">${esc(it.n)}<small>${s ? 'Cargaste '+s.ini+' a las '+hora(s.ts) : 'Sin control'}</small></span>${tag}
+      <input type="number" inputmode="numeric" min="0" step="1" data-stock="${it.id}" value="${d ?? ''}" placeholder="—" aria-label="Stock de ${esc(it.n)}"></div>`;
+  }).join("");
+  pintarSync();
+}
+$("#s-guardar").onclick = ()=>{
+  const ahora = Date.now();
+  document.querySelectorAll("[data-stock]").forEach(inp=>{
+    const id = inp.dataset.stock, v = inp.value.trim();
+    if(v===""){ delete stockIni[id]; return; }
+    const n = Math.max(0, parseInt(v,10)||0);
+    if(disponible(id) !== n) stockIni[id] = {ini:n, ts:ahora};   // solo reinicia lo que cambió
+  });
+  guardar("dgm_stock", stockIni); subirStock(true); pintarStock(); pintarNuevo(); aviso("Stock guardado");
+};
+$("#s-limpiar").onclick = ()=> confirmar("¿Quitar el control de stock de todos los platos?", ()=>{ stockIni = {}; guardar("dgm_stock", stockIni); subirStock(true); pintarStock(); pintarNuevo(); });
+
+// Publicar el stock para la web del cliente (cuando STOCK_API esté configurado en menu.js)
+const PIN_KEY = "dgm_pin";
+const conectado = () => typeof STOCK_API !== "undefined" && !!STOCK_API;
+function pintarSync(){
+  const el = $("#s-sync"); if(!el) return;
+  const pin = leer(PIN_KEY, null);
+  el.className = "sync " + (conectado() && pin ? "on" : "off");
+  el.textContent = !conectado() ? "Por ahora el stock solo se ve en este panel. Falta conectarlo para que los clientes vean “Agotado” en la web."
+    : pin ? "✅ Conectado: los clientes ven “Agotado” en la web en menos de 1 minuto."
+    : "Toca “Guardar stock” e ingresa tu PIN para que los clientes lo vean.";
+}
+let subiendo = null;
+function subirStock(preguntar){
+  if(!conectado()) return;
+  const pin = leer(PIN_KEY, null);
+  if(!pin){ if(preguntar) pedirPin(); return; }
+  clearTimeout(subiendo);
+  subiendo = setTimeout(async ()=>{
+    const filas = CONTROLABLES.map(it=>({id:it.id, cantidad: disponible(it.id)}));
+    try{
+      const r = await fetch(`${STOCK_API.url}/rest/v1/rpc/dgm_set_stock`, {method:"POST",
+        headers:{apikey:STOCK_API.key, Authorization:"Bearer "+STOCK_API.key, "Content-Type":"application/json"},
+        body: JSON.stringify({p_pin: pin, p_filas: filas})});
+      const txt = await r.text();
+      if(!r.ok && txt.includes("PIN")){ try{ localStorage.removeItem(PIN_KEY); }catch{} aviso("PIN incorrecto"); pintarSync(); return; }
+      if(!r.ok) aviso("No se pudo actualizar el stock en la web");
+    }catch{ aviso("Sin internet: el stock de la web se actualizará luego"); }
+  }, 400);
+}
+function pedirPin(){
+  modal(`<h3>PIN del panel</h3><p class="muted">Escribe el PIN del dueño para publicar el stock en la web.</p>
+    <label for="m-pin">PIN</label><input id="m-pin" type="password" inputmode="numeric" autocomplete="off">
+    <div class="dos"><button class="btn sec" data-cerrar>Cancelar</button><button class="btn pri" id="m-pin-ok">Guardar</button></div>`);
+  $("#m-pin").focus();
+  $("#m-pin-ok").onclick = ()=>{ const v = $("#m-pin").value.trim(); if(v.length<4) return aviso("Mínimo 4 dígitos"); guardar(PIN_KEY, v); cerrarModal(); pintarSync(); subirStock(); };
+}
 
 const diaDe = ts => { const d = new Date(ts); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; };
 const hoy = () => diaDe(Date.now());
@@ -280,9 +385,11 @@ function pintarNuevo(){
   if(!actual) return;
   const cant = k => actual.items.find(i=>i.k===k)?.c || 0;
   $("#carta").innerHTML = CARTA.map(c=>{
-    const n = cant(c.k), pr = c.p ?? precios[c.k];
-    return `<button class="plato ${c.b?'beb':''}" data-add="${c.k}">${n?`<span class="badge">${n}</span>`:""}
-      <div class="n">${esc(c.n)}</div><div class="p ${pr==null?'c':''}">${pr==null ? "Poner precio" : soles(pr)}</div></button>`;
+    const n = cant(c.k), pr = c.p ?? precios[c.k], q = quedaParaAgregar(base(c.k));
+    const ago = q<=0 && n===0;
+    const qtxt = q===Infinity ? "" : `<div class="q">${q<=0 ? (n ? "No quedan más" : "Agotado") : "Quedan "+q}</div>`;
+    return `<button class="plato ${c.b?'beb':''} ${ago?'agotado':''}" data-add="${c.k}">${n?`<span class="badge">${n}</span>`:""}
+      <div class="n">${esc(c.n)}</div><div class="p ${pr==null?'c':''}">${pr==null ? "Poner precio" : soles(pr)}</div>${qtxt}</button>`;
   }).join("");
   const t = totales(actual);
   $("#t-dest").textContent = (actual.editId ? "✏️ " : "") + actual.dest;
@@ -298,6 +405,7 @@ function pintarNuevo(){
 
 function agregar(k){
   const c = CARTA.find(x=>x.k===k);
+  if(quedaParaAgregar(base(k)) <= 0) return aviso(c.n + ": no hay stock");
   const ya = actual.items.find(i=>i.k===k);
   if(ya){ ya.c++; pintarNuevo(); return; }
   if(c.p==null){
@@ -448,9 +556,10 @@ $("#velo").addEventListener("click", e=>{ if(e.target.id==="velo" || e.target.cl
 function aviso(txt){ const t=$("#toast"); t.textContent=txt; t.classList.add("on"); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove("on"),2200); }
 
 function ir(v){
-  ["nuevo","pedidos","caja"].forEach(x=>$("#v-"+x).hidden = x!==v);
+  ["nuevo","pedidos","stock","caja"].forEach(x=>$("#v-"+x).hidden = x!==v);
   document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on", b.dataset.v===v));
   if(v==="caja") pintarCaja();
+  if(v==="stock") pintarStock();
   scrollTo(0,0);
 }
 
@@ -467,7 +576,7 @@ document.addEventListener("click", e=>{
   if(d.v) return ir(d.v);
   if(d.dest) return elegirDestino(d.dest);
   if(d.add) return agregar(d.add);
-  if(d.mas){ actual.items.find(i=>i.k===d.mas).c++; return pintarNuevo(); }
+  if(d.mas){ if(quedaParaAgregar(base(d.mas)) <= 0) return aviso("No hay más stock"); actual.items.find(i=>i.k===d.mas).c++; return pintarNuevo(); }
   if(d.menos){ const i = actual.items.find(x=>x.k===d.menos); if(--i.c<=0) actual.items = actual.items.filter(x=>x!==i); return pintarNuevo(); }
   if(d.editar) return editar(d.editar);
   if(d.servir){ pedidos.find(p=>p.id===d.servir).estado = "servido"; persistir(); return pintarTodo(); }

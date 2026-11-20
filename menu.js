@@ -32,3 +32,4 @@ const BEBIDAS = [
   {id:"chicha", n:"Chicha morada", ico:"🍇", bebida:true, ops:[{t:"Vaso S/ 2",p:2},{t:"1 litro S/ 6",p:6}]},
   {id:"cebada", n:"Cebada", ico:"🌾", bebida:true, ops:[{t:"Vaso S/ 2",p:2},{t:"1 litro S/ 6",p:6}]},
 ];
+const STOCK_API = null; // {url, key} de Supabase: se llena al conectar el stock con la web

@@ -65,10 +65,18 @@
 
   /* Pago */
   .pago{background:var(--yape);color:#fff;border-radius:18px;padding:20px;margin-top:28px;display:flex;gap:16px;align-items:center}
-  .pago .y{width:58px;height:58px;border-radius:16px;background:#fff;color:var(--yape);font-weight:800;display:grid;place-items:center;font-size:1.1rem;flex:none}
-  .pago small{opacity:.85}
+  .pago .qr{width:150px;height:auto;border-radius:12px;flex:none}
+  .pago small{opacity:.9;display:inline-block;margin-top:4px;line-height:1.4}
   .pago .num{font-size:1.35rem;font-weight:700;letter-spacing:.03em}
-  .copiar{background:#fff;color:var(--yape);padding:6px 12px;border-radius:999px;font-size:.8rem;font-weight:700;margin-top:6px}
+  .copiar{display:inline-block;text-decoration:none;background:#fff;color:var(--yape);padding:7px 14px;border-radius:999px;font-size:.82rem;font-weight:700;margin-top:10px}
+  @media(max-width:480px){.pago{flex-direction:column;text-align:center}.pago .qr{width:210px}}
+  .qr-mini{display:flex;gap:12px;align-items:center;background:#f6eefa;border-radius:12px;padding:10px;margin-top:8px;font-size:.8rem;color:var(--yape)}
+  .qr-mini img{width:84px;height:auto;border-radius:8px}
+  .ubi{width:100%;margin-top:8px;padding:11px;border-radius:12px;border:1.5px solid var(--mar2);background:#e6f0fa;color:var(--mar);font-weight:700}
+  .ubi.ok{border-color:#16a34a;background:#dcfce7;color:#166534}
+  .agotado{opacity:.55}
+  .agotado .precio{color:var(--gris)}
+  .tag-ago{background:#fde6de;color:var(--coral);font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:999px}
 
   footer{text-align:center;color:var(--gris);font-size:.8rem;padding:32px 0 12px}
 
@@ -143,18 +151,18 @@
 
   <section id="pago">
     <div class="pago">
-      <div class="y">yape</div>
+      <img src="yape-qr.jpg" alt="QR de Yape de D'Gusto Marino" class="qr" width="1131" height="1600">
       <div>
-        <small>Yapea al número</small>
-        <div class="num">983 431 333</div>
-        <small>Envía la captura junto a tu pedido</small><br>
-        <button class="copiar" data-copiar="983431333">Copiar número</button>
+        <div class="num">Paga con Yape</div>
+        <small>1. Escanea este QR desde tu app Yape.<br>2. Envía la captura junto a tu pedido.</small><br>
+        <small>¿Estás en el mismo celular? Descarga el QR y en Yape elige “Subir imagen”.</small><br>
+        <a class="copiar" href="yape-qr.jpg" download="QR-Yape-DGusto-Marino.jpg">⬇️ Descargar QR</a>
       </div>
     </div>
   </section>
 
   <footer>
-    Pedidos y Yape: <b>983 431 333</b><br>
+    Pedidos por WhatsApp: <b>983 431 333</b><br>
     D'Gusto Marino · Pescados Fritos
   </footer>
 </main>
@@ -191,6 +199,7 @@
     <div id="caja-dir" hidden>
       <label for="dir">Dirección de entrega</label>
       <input id="dir" autocomplete="street-address" placeholder="Calle, número, referencia">
+      <button class="ubi" id="ubi">📍 Enviar mi ubicación actual</button>
     </div>
 
     <label>Forma de pago</label>
@@ -198,6 +207,7 @@
       <button data-v="Yape" class="on">💜 Yape</button>
       <button data-v="Efectivo">💵 Efectivo</button>
     </div>
+    <div class="qr-mini" id="qr-mini"><img src="yape-qr.jpg" alt="QR de Yape" width="1131" height="1600"><span>Escanea el QR con Yape y manda la captura en el chat.<br><a href="yape-qr.jpg" download="QR-Yape-DGusto-Marino.jpg" style="color:inherit;font-weight:700">⬇️ Descargar QR</a></span></div>
 
     <label for="notas">Notas (opcional)</label>
     <textarea id="notas" rows="2" placeholder="Ej. sin ensalada, bien doradito"></textarea>
@@ -223,6 +233,7 @@ function claveDe(it){
 
 function tarjeta(it, ico){
   const k = claveDe(it), c = carrito[k]?.c || 0;
+  if(agotado(it.id)) return `<div class="item agotado"><div class="ico">${it.ico || ico}</div><div class="info"><div class="nom">${it.n}</div><span class="tag-ago">Agotado por hoy</span></div></div>`;
   let precio;
   if(it.ops) precio = `<div class="sel">${it.ops.map((o,i)=>`<button data-op="${it.id}" data-i="${i}" class="${(opcion[it.id]||0)===i?'on':''}">${o.t}</button>`).join("")}</div>`;
   else if(it.p==null) precio = `<div class="precio cons">Precio a consultar</div>`;
@@ -258,6 +269,8 @@ document.addEventListener("click", e=>{
   if(t.dataset.op){ opcion[t.dataset.op] = +t.dataset.i; pintar(); return; }
   if(t.dataset.mas){
     const it = buscar(t.dataset.mas), k = claveDe(it), d = datosDe(it);
+    if(agotado(it.id)) return aviso(it.n + " está agotado");
+    if(stock[it.id] != null && (carrito[k]?.c || 0) >= stock[it.id]) return aviso("Solo quedan " + stock[it.id] + " de " + it.n);
     carrito[k] = carrito[k] || {n:d.n, p:d.p, c:0, b:!!it.bebida};
     carrito[k].c++; pintar(); return;
   }
@@ -266,12 +279,10 @@ document.addEventListener("click", e=>{
     if(carrito[k] && --carrito[k].c<=0) delete carrito[k];
     pintar(); return;
   }
-  if(t.dataset.lmas){ carrito[t.dataset.lmas].c++; pintar(); return; }
+  if(t.dataset.lmas){ const id = t.dataset.lmas.split(":")[0]; if(stock[id] != null && carrito[t.dataset.lmas].c >= stock[id]) return aviso("Solo quedan " + stock[id]); carrito[t.dataset.lmas].c++; pintar(); return; }
+  if(t.id==="ubi") return pedirUbicacion();
   if(t.dataset.lmenos){ const k = t.dataset.lmenos; if(--carrito[k].c<=0) delete carrito[k]; pintar(); return; }
   if(t.id==="editar-pedido"){ cerrar(); document.getElementById("pescados").scrollIntoView({behavior:"smooth"}); aviso("Agrega o quita platos con + y −"); return; }
-  if(t.dataset.copiar){
-    navigator.clipboard?.writeText(t.dataset.copiar).then(()=>aviso("Número de Yape copiado"),()=>aviso("Yape: 983 431 333"));
-  }
 });
 
 // Nombre de la línea del pedido (Chita S/18 vs S/20, vaso vs litro)
@@ -286,6 +297,7 @@ function segmento(id){
   $(id).addEventListener("click", e=>{
     const b = e.target.closest("button"); if(!b) return;
     $(id).querySelectorAll("button").forEach(x=>x.classList.toggle("on", x===b));
+    if(id==="#pago-sel") $("#qr-mini").hidden = b.dataset.v!=="Yape";
     if(id==="#entrega"){
       $("#caja-dir").hidden = b.dataset.v!=="Delivery";
       $("#caja-mesa").hidden = b.dataset.v!=="En mesa";
@@ -318,7 +330,7 @@ $("#enviar").onclick = ()=>{
   const entrega = valorSeg("#entrega"), pago = valorSeg("#pago-sel");
   const dir = $("#dir").value.trim(), notas = $("#notas").value.trim();
   if(!nombre) return aviso("Escribe tu nombre"), $("#nombre").focus();
-  if(entrega==="Delivery" && !dir) return aviso("Escribe tu dirección"), $("#dir").focus();
+  if(entrega==="Delivery" && !dir && !ubicacion) return aviso("Escribe tu dirección o envía tu ubicación"), $("#dir").focus();
   const items = Object.values(carrito);
   const {tuppers, total} = calcular();
   let m = `🐟 *Nuevo pedido – D'Gusto Marino*\n\n`;
@@ -326,10 +338,44 @@ $("#enviar").onclick = ()=>{
   if(tuppers) m += `• ${tuppers} × Tupper — ${soles(tuppers*TUPPER)}\n`;
   m += `\n*Total: ${soles(total)}*${items.some(i=>i.p==null)?" (+ platos por consultar)":""}\n\n`;
   const donde = entrega==="En mesa" ? `En mesa ${valorSeg("#mesa-sel")}` : entrega;
-  m += `👤 ${nombre}\n📦 ${donde}${entrega==="Delivery"?`\n📍 ${dir}`:""}\n💳 ${pago}${pago==="Yape"?` (al ${YAPE} – envío captura)`:""}`;
+  m += `👤 ${nombre}\n📦 ${donde}`;
+  if(entrega==="Delivery"){ if(dir) m += `\n🏠 ${dir}`; if(ubicacion) m += `\n📍 Mi ubicación: https://maps.google.com/?q=${ubicacion.lat},${ubicacion.lng}`; }
+  m += `\n💳 ${pago}${pago==="Yape"?" (pagué con el QR – envío captura)":""}`;
   if(notas) m += `\n📝 ${notas}`;
   window.open(`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(m)}`, "_blank");
 };
+
+// ---------- Ubicación real (delivery) ----------
+let ubicacion = null;
+function pedirUbicacion(){
+  const b = $("#ubi");
+  if(!navigator.geolocation) return aviso("Tu celular no permite compartir ubicación");
+  b.textContent = "⏳ Buscando tu ubicación…";
+  navigator.geolocation.getCurrentPosition(pos=>{
+    ubicacion = {lat: pos.coords.latitude.toFixed(6), lng: pos.coords.longitude.toFixed(6)};
+    b.classList.add("ok"); b.textContent = "✅ Ubicación lista · se enviará en el pedido";
+  }, err=>{
+    b.classList.remove("ok");
+    b.textContent = "📍 Enviar mi ubicación actual";
+    aviso(err.code===1 ? "Activa el permiso de ubicación para esta página" : "No se pudo obtener tu ubicación, escribe tu dirección");
+  }, {enableHighAccuracy:true, timeout:15000, maximumAge:60000});
+}
+
+// ---------- Stock (lo carga el dueño desde el panel) ----------
+let stock = {};   // id -> cantidad disponible (sin dato = sin límite)
+const agotado = id => stock[id] != null && stock[id] <= 0;
+async function cargarStock(){
+  if(typeof STOCK_API === "undefined" || !STOCK_API) return;
+  try{
+    const r = await fetch(`${STOCK_API.url}/rest/v1/dgm_stock?select=id,cantidad`, {headers:{apikey:STOCK_API.key, Authorization:"Bearer "+STOCK_API.key}, cache:"no-store"});
+    if(!r.ok) return;
+    const filas = await r.json();
+    stock = {}; filas.forEach(f=>{ if(f.cantidad != null) stock[f.id] = f.cantidad; });
+    pintar();
+  }catch{}
+}
+cargarStock(); setInterval(cargarStock, 60000);
+document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) cargarStock(); });
 
 // Pestaña activa según scroll
 const secciones = ["pescados","bebidas","pago"].map(id=>document.getElementById(id));
